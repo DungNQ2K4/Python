@@ -1,0 +1,57 @@
+import pandas as pd
+
+# Load historical sales data
+sales_data = pd.read_csv('historical_sales.csv')
+
+# Convert 'Date' column to datetime format
+sales_data['Date'] = pd.to_datetime(sales_data['Date'])
+
+# Set 'Date' column as the index
+sales_data.set_index('Date', inplace=True)
+
+# Resample data to monthly frequency and sum salesAAA
+monthly_sales = sales_data.resample('M').sum()
+
+import matplotlib.pyplot as plt
+
+# Plot monthly sales data
+plt.figure(figsize=(10, 6))
+plt.plot(monthly_sales)
+plt.title('Monthly Sales Data')
+plt.xlabel('Date')
+plt.ylabel('Sales')
+plt.show()
+
+# Add month and quarter columns
+monthly_sales['Month'] = monthly_sales.index.month
+monthly_sales['Quarter'] = monthly_sales.index.quarter
+
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+# Split data into train and test sets
+train_size = int(len(monthly_sales) * 0.8)
+train_data, test_data = monthly_sales[:train_size], monthly_sales[train_size:]
+
+# Train ARIMA model
+model = ARIMA(train_data['Sales'], order=(1,1,1))
+model_fit = model.fit()
+
+# Make predictions
+predictions = model_fit.forecast(steps=len(test_data))[0]
+
+# Evaluate model
+mse = mean_squared_error(test_data['Sales'], predictions)
+rmse = np.sqrt(mse)
+print('Root Mean Squared Error (RMSE):', rmse)
+
+# Plot actual vs. predicted sales
+plt.figure(figsize=(10, 6))
+plt.plot(test_data.index, test_data['Sales'], label='Actual')
+plt.plot(test_data.index, predictions, label='Predicted')
+plt.title('Actual vs. Predicted Sales')
+plt.xlabel('Date')
+plt.ylabel('Sales')
+plt.legend()
+plt.show()
